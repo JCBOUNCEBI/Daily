@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Revenue Uploader v10 — Multi Source</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#f4f5fb;--s1:#ffffff;--s2:#eef0f8;--s3:#e4e6f2;
+  --bdr:#d0d3e8;--bdr2:#b8bbda;
+  --acc:#4a4de0;--acc2:#d4820a;--acc3:#0aaa80;
+  --red:#d94040;--txt:#1a1a2e;--mut:#6b6b8a;--mut2:#9898b8;
+  --gdrive:#2d9348;--onedrive:#0067b8;--ftp:#d4820a;--local:#4a4de0;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--txt);font-family:'Space Grotesk',sans-serif;min-height:100vh;overflow-x:hidden}
+
+/* Animated background */
+body::before{
+  content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 80% 50% at 20% 20%,rgba(74,77,224,.06) 0%,transparent 60%),
+             radial-gradient(ellipse 60% 40% at 80% 80%,rgba(10,170,128,.04) 0%,transparent 50%);
+  pointer-events:none;z-index:0;
+}
+
+.app{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:40px 24px 80px}
+
+/* ── HEADER ── */
+.header{text-align:center;margin-bottom:48px}
+.header-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:'Space Mono',monospace;font-size:10px;letter-spacing:3px;
+  text-transform:uppercase;color:var(--acc3);
+  border:1px solid rgba(91,244,200,.2);padding:5px 14px;border-radius:2px;
+  margin-bottom:20px;
+}
+.header-eyebrow::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--acc3);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+h1{font-size:clamp(28px,5vw,52px);font-weight:700;line-height:1.05;letter-spacing:-1px;margin-bottom:12px}
+h1 span{background:linear-gradient(135deg,var(--acc) 0%,var(--acc3) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.header-sub{color:var(--mut);font-size:14px;font-weight:300;max-width:500px;margin:0 auto}
+
+/* ── SECTION ── */
+.section{margin-bottom:20px}
+.section-label{
+  font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;
+  text-transform:uppercase;color:var(--mut);margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;
+}
+.section-label::after{content:'';flex:1;height:1px;background:var(--bdr)}
+
+/* ── SOURCE CARDS ── */
+.sources{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px}
+@media(min-width:640px){.sources{grid-template-columns:repeat(4,1fr)}}
+.src-card{
+  background:var(--s1);border:1.5px solid var(--bdr);border-radius:10px;
+  padding:16px 14px;cursor:pointer;transition:all .2s;
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  position:relative;user-select:none;
+}
+.src-card:hover{border-color:var(--bdr2);background:var(--s2);transform:translateY(-2px)}
+.src-card.active{border-color:var(--src-color);background:var(--s2);box-shadow:0 0 0 1px var(--src-color),0 4px 20px rgba(0,0,0,.3)}
+.src-card.active .src-icon{filter:drop-shadow(0 0 8px var(--src-color))}
+.src-icon{font-size:28px;transition:all .2s}
+.src-name{font-size:12px;font-weight:600;color:var(--txt)}
+.src-desc{font-size:10px;color:var(--mut);text-align:center}
+.src-badge{
+  position:absolute;top:8px;right:8px;
+  font-family:'Space Mono',monospace;font-size:8px;
+  padding:2px 5px;border-radius:2px;
+}
+.badge-live{background:rgba(91,244,200,.15);color:var(--acc3);border:1px solid rgba(91,244,200,.2)}
+.badge-soon{background:rgba(255,255,255,.05);color:var(--mut);border:1px solid var(--bdr)}
+
+/* ── PANELS ── */
+.panel{display:none}
+.panel.active{display:block}
+
+/* Local upload panel */
+.upload-area{
+  border:2px dashed var(--bdr);border-radius:12px;
+  padding:40px 20px;text-align:center;cursor:pointer;
+  transition:all .25s;position:relative;background:var(--s1);
+}
+.upload-area:hover,.upload-area.over{border-color:var(--acc);background:var(--s2)}
+.upload-area input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-icon{font-size:40px;margin-bottom:12px;display:block}
+.upload-title{font-size:15px;font-weight:600;margin-bottom:6px}
+.upload-title span{color:var(--acc)}
+.upload-hint{font-size:12px;color:var(--mut);line-height:1.5}
+.upload-modes{display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+.mode-btn{
+  display:inline-flex;align-items:center;gap:5px;
+  font-family:'Space Mono',monospace;font-size:10px;letter-spacing:.5px;
+  padding:5px 12px;border-radius:4px;cursor:pointer;transition:all .2s;
+  background:var(--s2);border:1px solid var(--bdr);color:var(--mut);
+}
+.mode-btn:hover{border-color:var(--acc);color:var(--acc)}
+.mode-btn.active{border-color:var(--acc);color:var(--acc);background:rgba(91,94,244,.1)}
+
+/* Google Drive panel */
+.gdrive-panel,.onedrive-panel,.ftp-panel{
+  background:var(--s1);border:1px solid var(--bdr);border-radius:12px;padding:24px;
+}
+.connect-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:20px}
+.connect-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:10px 20px;border-radius:6px;font-size:13px;font-weight:600;
+  border:none;cursor:pointer;transition:all .2s;
+}
+.btn-gdrive{background:var(--gdrive);color:#fff}
+.btn-gdrive:hover{background:#2d9348;transform:translateY(-1px)}
+.btn-onedrive{background:var(--onedrive);color:#fff}
+.btn-onedrive:hover{background:#006cbd;transform:translateY(-1px)}
+.connect-status{font-size:12px;color:var(--mut)}
+.connect-status.ok{color:var(--acc3)}
+
+/* Drive file browser */
+.drive-browser{
+  border:1px solid var(--bdr);border-radius:8px;overflow:hidden;max-height:300px;overflow-y:auto;
+}
+.drive-item{
+  display:flex;align-items:center;gap:10px;padding:10px 14px;
+  border-bottom:1px solid rgba(37,37,56,.6);cursor:pointer;transition:background .15s;
+  font-size:13px;
+}
+.drive-item:hover{background:var(--s2)}
+.drive-item:last-child{border-bottom:none}
+.drive-item.selected{background:rgba(91,94,244,.12)}
+.drive-item .di-icon{font-size:16px;flex-shrink:0}
+.drive-item .di-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drive-item .di-meta{font-size:10px;color:var(--mut);font-family:'Space Mono',monospace;white-space:nowrap}
+.drive-item .di-check{width:16px;height:16px;border-radius:3px;border:1.5px solid var(--bdr2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;transition:all .15s}
+.drive-item.selected .di-check{background:var(--acc);border-color:var(--acc);color:#fff}
+
+/* FTP form */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.form-grid.single{grid-template-columns:1fr}
+.field label{display:block;font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut);margin-bottom:5px}
+.field input{
+  width:100%;background:var(--s2);border:1.5px solid var(--bdr);border-radius:6px;
+  color:var(--txt);font-family:'Space Mono',monospace;font-size:12px;
+  padding:10px 12px;outline:none;transition:border-color .2s;
+}
+.field input:focus{border-color:var(--acc)}
+.field input::placeholder{color:var(--mut2)}
+
+/* File queue */
+.queue{margin-top:16px}
+.queue-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.queue-title{font-size:13px;font-weight:600}
+.queue-count{
+  font-family:'Space Mono',monospace;font-size:10px;
+  padding:2px 8px;border-radius:3px;background:rgba(91,94,244,.15);color:var(--acc);
+}
+.queue-list{display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto}
+.queue-item{
+  display:flex;align-items:center;gap:10px;
+  background:var(--s2);border:1px solid var(--bdr);border-radius:7px;
+  padding:8px 12px;font-size:12px;animation:slideIn .2s ease;
+}
+@keyframes slideIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.qi-src{
+  font-family:'Space Mono',monospace;font-size:9px;padding:2px 6px;border-radius:2px;
+  white-space:nowrap;flex-shrink:0;border:1px solid;
+}
+.qi-folder{font-size:10px;color:var(--acc2);margin-right:2px}
+.qi-name{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500}
+.qi-meta{color:var(--mut);font-family:'Space Mono',monospace;font-size:10px;white-space:nowrap}
+.qi-tag{font-family:'Space Mono',monospace;font-size:9px;padding:2px 7px;border-radius:3px;white-space:nowrap;flex-shrink:0}
+.qi-remove{background:none;border:none;color:var(--mut);cursor:pointer;font-size:15px;padding:0 2px;transition:color .15s;flex-shrink:0}
+.qi-remove:hover{color:var(--red)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:11px 22px;border-radius:7px;font-family:'Space Grotesk',sans-serif;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn-primary{background:var(--acc);color:#fff}
+.btn-primary:hover{background:#4a4de0;transform:translateY(-1px)}
+.btn-primary:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.btn-success{background:var(--acc3);color:#050508;font-weight:700}
+.btn-success:hover{background:#4ae0b4;transform:translateY(-1px)}
+.btn-success:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.btn-outline{background:transparent;border:1.5px solid var(--bdr);color:var(--txt)}
+.btn-outline:hover{border-color:var(--acc);color:var(--acc)}
+.btn-sm{padding:7px 14px;font-size:11px}
+.arow{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px}
+
+/* Script URL */
+.url-card{background:var(--s1);border:1px solid var(--bdr);border-radius:12px;padding:20px;margin-bottom:20px}
+.url-label{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--mut);margin-bottom:6px;display:block}
+.url-input{width:100%;background:var(--s2);border:1.5px solid var(--bdr);border-radius:7px;color:var(--txt);font-family:'Space Mono',monospace;font-size:12px;padding:12px 14px;outline:none;transition:border-color .2s}
+.url-input:focus{border-color:var(--acc)} .url-input.valid{border-color:var(--acc3)}
+.url-status{font-size:11px;color:var(--mut);margin-top:6px}
+
+/* Progress */
+.progress-card{background:var(--s1);border:1px solid var(--bdr);border-radius:12px;padding:20px;margin-top:16px}
+.pg-label{font-size:12px;color:var(--mut);margin-bottom:8px;display:flex;justify-content:space-between}
+.pg-bar-bg{height:6px;background:var(--s3);border-radius:3px;overflow:hidden}
+.pg-bar{height:100%;background:linear-gradient(90deg,var(--acc),var(--acc3));border-radius:3px;width:0%;transition:width .4s ease}
+.log{margin-top:14px;background:var(--s3);border:1px solid var(--bdr);border-radius:8px;padding:12px;font-family:'Space Mono',monospace;font-size:11px;max-height:160px;overflow-y:auto;line-height:1.8}
+.ll{display:flex;gap:8px} .lt{color:var(--mut2);flex-shrink:0}
+.lok{color:var(--acc3)} .lerr{color:var(--red)} .linf{color:var(--acc)} .lwrn{color:var(--acc2)}
+
+/* Column ref */
+.col-ref{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;margin-bottom:20px}
+.col-box{background:var(--s1);border:1px solid var(--bdr);border-radius:7px;padding:10px 12px}
+.col-name{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px}
+.col-range{font-size:10px;color:var(--mut)}
+
+/* Stats */
+.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:16px}
+@media(max-width:700px){.stats{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:400px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat-box{background:var(--s1);border:1px solid var(--bdr);border-radius:8px;padding:10px 8px;text-align:center}
+.stat-val{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;margin-bottom:2px}
+
+/* Tag colors */
+.t-ftd{background:rgba(244,162,91,.2);color:var(--acc2);border-color:rgba(244,162,91,.3)}
+.t-ftd1{background:rgba(244,162,91,.1);color:#c4812a;border-color:rgba(244,162,91,.2)}
+.t-mtd{background:rgba(91,94,244,.2);color:var(--acc);border-color:rgba(91,94,244,.3)}
+.t-lmtd{background:rgba(91,244,200,.15);color:var(--acc3);border-color:rgba(91,244,200,.2)}
+.t-lymtd{background:rgba(244,91,91,.15);color:var(--red);border-color:rgba(244,91,91,.2)}
+.t-lfm{background:rgba(100,200,255,.1);color:#60c8ff;border-color:rgba(100,200,255,.2)}
+.t-lyfm{background:rgba(200,150,255,.1);color:#c896ff;border-color:rgba(200,150,255,.2)}
+.t-mtdcash{background:rgba(52,211,153,.18);color:#34d399;border-color:rgba(52,211,153,.3)}
+.t-ftd1cash{background:rgba(249,115,22,.18);color:#f97316;border-color:rgba(249,115,22,.3)}
+.t-mtdprod{background:rgba(232,121,249,.18);color:#e879f9;border-color:rgba(232,121,249,.3)}
+.t-ftd1prod{background:rgba(251,113,133,.18);color:#fb7185;border-color:rgba(251,113,133,.3)}
+.t-lmtdprod{background:rgba(45,212,191,.18);color:#2dd4bf;border-color:rgba(45,212,191,.3)}
+.t-lymtdprod{background:rgba(248,113,113,.18);color:#f87171;border-color:rgba(248,113,113,.3)}
+.t-lfmprod{background:rgba(56,189,248,.18);color:#38bdf8;border-color:rgba(56,189,248,.3)}
+.t-lyfmprod{background:rgba(167,139,250,.18);color:#a78bfa;border-color:rgba(167,139,250,.3)}
+.t-unk{background:rgba(255,255,255,.04);color:var(--mut);border-color:var(--bdr)}
+
+.hidden{display:none!important}
+.divider{height:1px;background:var(--bdr);margin:20px 0}
+
+/* Drive path bar */
+.path-bar{display:flex;align-items:center;gap:6px;padding:8px 12px;background:var(--s2);border:1px solid var(--bdr);border-radius:6px;font-size:12px;margin-bottom:10px;flex-wrap:wrap}
+.path-seg{color:var(--acc);cursor:pointer;font-weight:500} .path-seg:hover{text-decoration:underline}
+.path-sep{color:var(--mut)}
+
+/* Tooltip */
+.info-note{background:rgba(91,94,244,.08);border:1px solid rgba(91,94,244,.2);border-radius:6px;padding:10px 14px;font-size:12px;color:var(--mut);line-height:1.55;margin-bottom:14px}
+.info-note strong{color:var(--acc)}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-eyebrow">🔴 Live System</div>
+  <h1>Revenue<br/><span>Multi-Source Uploader</span></h1>
+  <p class="header-sub">Pull XLS files from any source, auto-map by date, push to Google Sheets in one click</p>
+</div>
+
+<!-- SCRIPT URL -->
+<div class="url-card">
+  <span class="url-label">Google Apps Script URL</span>
+  <input class="url-input" type="text" id="scriptUrl" placeholder="https://script.google.com/macros/s/YOUR_ID/exec" oninput="validateUrl(this)"/>
+  <div class="url-status" id="urlSt">
+    Paste your Apps Script Web App URL · <a href="#" onclick="showSetupGuide();return false" style="color:var(--acc)">Setup guide ▾</a>
+  </div>
+  <div id="setupGuide" class="hidden" style="margin-top:12px">
+    <div class="info-note">
+      <strong>One-time setup:</strong> Open your Google Sheet → Extensions → Apps Script → paste GoogleAppsScript_Code.gs → Deploy → New deployment → Web app → Execute as: <strong>Me</strong> → Access: <strong>Anyone</strong> → Copy URL above.
+    </div>
+  </div>
+</div>
+
+<!-- DATE COLUMN REFERENCE -->
+<div class="section">
+  <div class="section-label">Date Column Mapping</div>
+  <div class="col-ref" id="colRef"></div>
+</div>
+
+<!-- SOURCE SELECTION -->
+<div class="section">
+  <div class="section-label">Select Source</div>
+  <div class="sources">
+    <div class="src-card" id="src-local" style="--src-color:var(--local)" onclick="selectSource('local')">
+      <div class="src-icon">💻</div>
+      <div class="src-name">Local / Folder</div>
+      <div class="src-desc">Upload files or folders from your PC</div>
+      <span class="src-badge badge-live">LIVE</span>
+    </div>
+    <div class="src-card" id="src-gdrive" style="--src-color:var(--gdrive)" onclick="selectSource('gdrive')">
+      <div class="src-icon">🟢</div>
+      <div class="src-name">Google Drive</div>
+      <div class="src-desc">Browse and import from Drive</div>
+      <span class="src-badge badge-live">LIVE</span>
+    </div>
+    <div class="src-card" id="src-onedrive" style="--src-color:var(--onedrive)" onclick="selectSource('onedrive')">
+      <div class="src-icon">🔵</div>
+      <div class="src-name">OneDrive</div>
+      <div class="src-desc">Browse and import from OneDrive</div>
+      <span class="src-badge badge-live">LIVE</span>
+    </div>
+    <div class="src-card" id="src-ftp" style="--src-color:var(--ftp)" onclick="selectSource('ftp')">
+      <div class="src-icon">🖧</div>
+      <div class="src-name">FTP / SFTP</div>
+      <div class="src-desc">Connect to FTP server and import</div>
+      <span class="src-badge badge-live">LIVE</span>
+    </div>
+  </div>
+</div>
+
+<!-- LOCAL PANEL -->
+<div class="panel" id="panel-local">
+  <div class="upload-modes" style="justify-content:flex-start;margin-bottom:10px">
+    <div class="mode-btn active" id="mode-folder" onclick="setMode('folder')">📁 Folder</div>
+    <div class="mode-btn" id="mode-files" onclick="setMode('files')">📄 Files</div>
+  </div>
+  <div class="upload-area" id="dz">
+    <input type="file" id="fi" accept=".xls,.xlsx" multiple webkitdirectory/>
+    <span class="upload-icon">📁</span>
+    <div class="upload-title">Drop <span>folders</span> here or click to browse</div>
+    <div class="upload-hint">Select ALL folder, FULL MONTH folder, or any XLS files<br/>Multiple folders supported · .xls and .xlsx</div>
+  </div>
+</div>
+
+<!-- GOOGLE DRIVE PANEL -->
+<div class="panel" id="panel-gdrive">
+  <div class="gdrive-panel">
+    <div class="info-note">
+      <strong>Google Drive Picker:</strong> Click Connect to sign in with Google and browse your Drive files. Select one or more folders/files containing your XLS reports.
+    </div>
+    <div class="connect-row">
+      <button class="connect-btn btn-gdrive" onclick="connectGDrive()">
+        <svg width="16" height="16" viewBox="0 0 24 24"><path fill="white" d="M12 11.55L6.73 3h10.54L12 11.55zm-1.27.73L5 21H1.91L8.22 9.67 10.73 12.28zM12 13.45L17.27 21H6.73L12 13.45zM15.78 9.67L22.09 21H19L13.27 12.28 15.78 9.67z"/></svg>
+        Connect Google Drive
+      </button>
+      <span class="connect-status" id="gdrive-status">Not connected</span>
+    </div>
+
+    <div id="gdrive-browser" class="hidden">
+      <div class="path-bar" id="gdrive-path">
+        <span class="path-seg" onclick="gdriveNav('root')">My Drive</span>
+      </div>
+      <div class="drive-browser" id="gdrive-list">
+        <div style="padding:20px;text-align:center;color:var(--mut);font-size:13px">Loading...</div>
+      </div>
+      <div class="arow">
+        <button class="btn btn-primary btn-sm" onclick="importGDriveSelected()">⬇ Import Selected</button>
+        <span id="gdrive-sel-count" style="font-size:12px;color:var(--mut)"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ONEDRIVE PANEL -->
+<div class="panel" id="panel-onedrive">
+  <div class="onedrive-panel">
+    <div class="info-note">
+      <strong>OneDrive File Picker:</strong> Click Connect to sign in with Microsoft and browse your OneDrive. Select folders or files to import.
+    </div>
+    <div class="connect-row">
+      <button class="connect-btn btn-onedrive" onclick="connectOneDrive()">
+        <svg width="16" height="16" viewBox="0 0 24 24"><path fill="white" d="M10.5 6.5C11.7 4.3 14.1 3 16.7 3c3.4 0 6.2 2.6 6.3 6 1.2.4 1 2-.2 2h-9.3L10.5 6.5zm-7.3 8.8C2.4 14.8 2 14.1 2 13.3c0-1.7 1.3-3 3-3 .3 0 .6 0 .9.1C6.5 8.9 8.1 8 9.9 8c2.6 0 4.8 1.9 5.1 4.5H15c1.1 0 2 .9 2 2s-.9 2-2 2H4c-.3 0-.6-.1-.8-.2z"/></svg>
+        Connect OneDrive
+      </button>
+      <span class="connect-status" id="onedrive-status">Not connected</span>
+    </div>
+
+    <div id="onedrive-browser" class="hidden">
+      <div class="path-bar" id="onedrive-path">
+        <span class="path-seg" onclick="onedriveNav('root')">My Files</span>
+      </div>
+      <div class="drive-browser" id="onedrive-list">
+        <div style="padding:20px;text-align:center;color:var(--mut);font-size:13px">Loading...</div>
+      </div>
+      <div class="arow">
+        <button class="btn btn-primary btn-sm" onclick="importOneDriveSelected()">⬇ Import Selected</button>
+        <span id="onedrive-sel-count" style="font-size:12px;color:var(--mut)"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FTP PANEL -->
+<div class="panel" id="panel-ftp">
+  <div class="ftp-panel">
+    <div class="info-note">
+      <strong>FTP/SFTP:</strong> Enter your server credentials. The tool connects via a proxy endpoint and downloads XLS files from the specified path. Supports FTP, SFTP, and FTPS protocols.
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Protocol</label>
+        <select id="ftpProto" style="width:100%;background:var(--s2);border:1.5px solid var(--bdr);border-radius:6px;color:var(--txt);font-family:'Space Mono',monospace;font-size:12px;padding:10px 12px;outline:none">
+          <option value="ftp">FTP</option><option value="sftp">SFTP</option><option value="ftps">FTPS</option>
+        </select>
+      </div>
+      <div class="field"><label>Host</label><input type="text" id="ftpHost" placeholder="ftp.yourserver.com"/></div>
+      <div class="field"><label>Port</label><input type="text" id="ftpPort" placeholder="21"/></div>
+      <div class="field"><label>Username</label><input type="text" id="ftpUser" placeholder="username"/></div>
+    </div>
+    <div class="form-grid">
+      <div class="field"><label>Password</label><input type="password" id="ftpPass" placeholder="••••••••"/></div>
+      <div class="field"><label>Remote Path (folder)</label><input type="text" id="ftpPath" placeholder="/upload sales/ALL"/></div>
+    </div>
+    <div class="arow">
+      <button class="btn btn-outline" onclick="connectFTP()">🔌 Connect & Browse</button>
+      <span id="ftp-status" style="font-size:12px;color:var(--mut)"></span>
+    </div>
+
+    <div id="ftp-browser" class="hidden" style="margin-top:14px">
+      <div class="path-bar" id="ftp-path"></div>
+      <div class="drive-browser" id="ftp-list"></div>
+      <div class="arow">
+        <button class="btn btn-primary btn-sm" onclick="importFTPSelected()">⬇ Import Selected</button>
+        <span id="ftp-sel-count" style="font-size:12px;color:var(--mut)"></span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FILE QUEUE -->
+<div class="queue" id="queueSection" style="margin-top:16px">
+  <div class="queue-header">
+    <span class="queue-title">📋 File Queue</span>
+    <span class="queue-count" id="queueCount">0 files</span>
+  </div>
+  <div class="queue-list" id="queueList">
+    <div style="padding:16px;text-align:center;color:var(--mut);font-size:12px;border:1px dashed var(--bdr);border-radius:7px">
+      No files queued — add files from any source above
+    </div>
+  </div>
+</div>
+
+<!-- ACTION ROW -->
+<div class="arow" style="margin-top:20px">
+  <button class="btn btn-primary" id="parseBtn" disabled onclick="parseAll()">⚡ Parse All Files</button>
+  <button class="btn btn-success" id="pushBtn" disabled onclick="pushAll()">⬆ Push to Google Sheets</button>
+  <button class="btn btn-outline btn-sm" onclick="clearQueue()">🗑 Clear Queue</button>
+</div>
+
+<!-- STATS -->
+<div class="stats hidden" id="statsRow"></div>
+
+<!-- PROGRESS -->
+<div class="progress-card hidden" id="progressCard">
+  <div class="pg-label"><span id="pgLabel">Processing...</span><span id="pgPct">0%</span></div>
+  <div class="pg-bar-bg"><div class="pg-bar" id="pgBar"></div></div>
+  <div class="log" id="logEl">
+    <div class="ll"><span class="lt">--:--:--</span><span class="linf">Ready. Select a source and add files.</span></div>
+  </div>
+</div>
+
+</div><!-- /app -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+// ═══════════════════════════════ CONSTANTS ═══════════════════════════════
+const DATA_COLS=['FTD','FTD_1','MTD','LMTD','LYMTD','Last_Full_Month','Last_Year_Full_Month','MTD_CASH','FTD_1_CASH','MTD_PRODUCT','FTD_1_Product','LMTD_Product','LYMTD_Product','Last_Full_Month_Product','Last_Year_Full_Month_Product','MTD_CASH_MEMBERSHIPS','MTD_CASH_PACKAGES','MTD_GIFTCARDS','MTD_Revenue_MEMBERSHIPS'];
+const COL_COLORS={'FTD':'#f4a25b','FTD_1':'#c4812a','MTD':'#5b5ef4','LMTD':'#5bf4c8','LYMTD':'#f45b5b','Last_Full_Month':'#60c8ff','Last_Year_Full_Month':'#c896ff','MTD_CASH':'#34d399','FTD_1_CASH':'#f97316','MTD_PRODUCT':'#e879f9','FTD_1_Product':'#fb7185','LMTD_Product':'#2dd4bf','LYMTD_Product':'#f87171','Last_Full_Month_Product':'#38bdf8','Last_Year_Full_Month_Product':'#a78bfa','MTD_CASH_MEMBERSHIPS':'#818cf8','MTD_CASH_PACKAGES':'#fb923c','MTD_GIFTCARDS':'#4ade80','MTD_Revenue_MEMBERSHIPS':'#a855f7'};
+const TAG_CLS={'FTD':'t-ftd','FTD_1':'t-ftd1','MTD':'t-mtd','LMTD':'t-lmtd','LYMTD':'t-lymtd','Last_Full_Month':'t-lfm','Last_Year_Full_Month':'t-lyfm','MTD_CASH':'t-mtdcash','FTD_1_CASH':'t-ftd1cash','MTD_PRODUCT':'t-mtdprod','FTD_1_Product':'t-ftd1prod','LMTD_Product':'t-lmtdprod','LYMTD_Product':'t-lymtdprod','Last_Full_Month_Product':'t-lfmprod','Last_Year_Full_Month_Product':'t-lyfmprod','MTD_CASH_MEMBERSHIPS':'t-mtdcash','MTD_CASH_PACKAGES':'t-ftd1cash','MTD_GIFTCARDS':'t-lmtd','MTD_Revenue_MEMBERSHIPS':'t-lyfmprod'};
+
+const FIXED_CENTERS=[
+  {zone:'1-Head Office',center:'JCB Bhopal'},
+  {zone:'Bangalore',center:'Koramangala'},{zone:'Bangalore',center:'Lavelle Road'},
+  {zone:'BANGALORE',center:'Bounce Electronic City'},{zone:'BANGALORE',center:'Bounce Falcon City'},
+  {zone:'BANGALORE',center:'Bounce HSR'},{zone:'BANGALORE',center:'Bounce Indira Nagar'},
+  {zone:'BANGALORE',center:'Bounce JP Nagar'},{zone:'BANGALORE',center:'Bounce Kamanahalli'},
+  {zone:'BANGALORE',center:'Bounce Koramangala'},{zone:'BANGALORE',center:'Bounce Lavelle Road'},
+  {zone:'BANGALORE',center:'Bounce Marathahalli'},{zone:'BANGALORE',center:'Bounce New Bel Road'},
+  {zone:'BANGALORE',center:'Bounce Sahakarnagar'},{zone:'BANGALORE',center:'Bounce Sarjapur'},
+  {zone:'BANGALORE',center:'Bounce VR Mall Bengaluru'},{zone:'BANGALORE',center:'Bounce Whitefield'},
+  {zone:'BANGALORE',center:'Oryza Lavelle Road'},
+  {zone:'CHENNAI',center:'Bounce Adyar'},{zone:'CHENNAI',center:'Bounce Annanagar'},
+  {zone:'CHENNAI',center:'Bounce Ashoknagar'},{zone:'CHENNAI',center:'BOUNCE ECR'},
+  {zone:'CHENNAI',center:'BOUNCE ISPAHANI'},{zone:'CHENNAI',center:'Bounce KNK'},
+  {zone:'CHENNAI',center:'Bounce OMR'},{zone:'CHENNAI',center:'Kanya R.K.Salai'},
+  {zone:'CHENNAI',center:'ORYZA ST.MARY S ROAD'},
+  {zone:'HYDERABAD',center:'Bounce Banjara Hills'},{zone:'HYDERABAD',center:'Bounce inorbit mall'},
+  {zone:'Mumbai',center:'Bandra Pali'},{zone:'Mumbai',center:'Bandra-Kurla Complex'},
+  {zone:'Mumbai',center:'Chembur'},{zone:'Mumbai',center:'Juhu'},{zone:'Mumbai',center:'Kandivali'},
+  {zone:'Mumbai',center:'Kemps Corner'},{zone:'Mumbai',center:'Lokhandwala'},
+  {zone:'Mumbai',center:'Oberoi Mall'},{zone:'Mumbai',center:'Palladium'},
+  {zone:'Mumbai',center:'Powai'},{zone:'Mumbai',center:'Prabhadevi'},{zone:'Mumbai',center:'Rcity'},
+  {zone:'Pune',center:'Aundh'},{zone:'Pune',center:'Kopa'},{zone:'Pune',center:'Wakad'},
+];
+
+// ═══════════════════════════════ STATE ═══════════════════════════════
+let fileQueue=[];       // {file, source, folderName}
+let fileCache={};       // filename → {col, range}
+let colData={};         // col → {center → total}
+let currentSource='local';
+let uploadMode='folder';
+let gdriveToken=null, gdriveSelected={}, gdriveStack=['root'];
+let onedriveToken=null, onedriveSelected={}, onedriveStack=[{id:'root',name:'My Files'}];
+let ftpSelected={};
+
+// ═══════════════════════════════ DATE UTILS ═══════════════════════════════
+function today0(){const d=new Date();d.setHours(0,0,0,0);return d;}
+function dateKey(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function daysInMonth(y,m){return new Date(y,m+1,0).getDate();}
+function fmtD(d){const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return String(d.getDate()).padStart(2,'0')+' '+mo[d.getMonth()]+' '+d.getFullYear();}
+function parseFileDate(s){
+  const mo={jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+  const p=(s||'').trim().split(/\s+/);
+  if(p.length<3)return null;
+  const d=parseInt(p[0]),m=mo[p[1].toLowerCase().slice(0,3)],y=parseInt(p[2]);
+  if(isNaN(d)||m===undefined||isNaN(y))return null;
+  const dt=new Date(y,m,d);dt.setHours(0,0,0,0);return dt;
+}
+
+function getColRanges(){
+  const t=today0(),y=t.getFullYear(),m=t.getMonth();
+  const pm=m===0?11:m-1,py=m===0?y-1:y;
+  const yd=new Date(t);yd.setDate(t.getDate()-1);
+  return{
+    'FTD':{from:t,to:t},
+    'FTD_1':{from:yd,to:yd},
+    'MTD':{from:new Date(y,m,1),to:t},
+    'LMTD':{from:new Date(py,pm,1),to:new Date(py,pm,Math.min(t.getDate(),daysInMonth(py,pm)))},
+    'LYMTD':{from:new Date(y-1,m,1),to:new Date(y-1,m,Math.min(t.getDate(),daysInMonth(y-1,m)))},
+    'Last_Full_Month':{from:new Date(py,pm,1),to:new Date(py,pm,daysInMonth(py,pm))},
+    'Last_Year_Full_Month':{from:new Date(y-1,m,1),to:new Date(y-1,m,daysInMonth(y-1,m))},
+    'MTD_CASH':{from:new Date(y,m,1),to:t},
+    'FTD_1_CASH':{from:yd,to:yd},
+    'MTD_PRODUCT':{from:new Date(y,m,1),to:t},
+    'FTD_1_Product':{from:yd,to:yd},
+    'LMTD_Product':{from:new Date(y,m,1),to:yd},
+    'LYMTD_Product':{from:new Date(y-1,m,1),to:new Date(y-1,m,yd.getDate())},
+    'Last_Full_Month_Product':{from:new Date(py,pm,1),to:new Date(py,pm,daysInMonth(py,pm))},
+    'Last_Year_Full_Month_Product':{from:new Date(y-1,m,1),to:new Date(y-1,m,daysInMonth(y-1,m))},
+    'MTD_CASH_MEMBERSHIPS':{from:new Date(y,m,1),to:t},
+    'MTD_CASH_PACKAGES':{from:new Date(y,m,1),to:t},
+    'MTD_GIFTCARDS':{from:new Date(y,m,1),to:t},
+    'MTD_Revenue_MEMBERSHIPS':{from:new Date(y,m,1),to:t},
+  };
+}
+
+function detectRangeCol(from,to){
+  const t=today0(),y=t.getFullYear(),m=t.getMonth();
+  const pm=m===0?11:m-1,py=m===0?y-1:y;
+  const fy=from.getFullYear(),fm=from.getMonth(),fd=from.getDate();
+  const ty=to.getFullYear(),td=to.getDate();
+  const first=(fd===1),full=first&&(td===daysInMonth(ty,to.getMonth()));
+  if(first&&fy===y&&fm===m&&!full)          return 'MTD';
+  if(first&&fy===py&&fm===pm&&!full)        return 'LMTD';
+  if(full&&fy===py&&fm===pm)                return 'Last_Full_Month';
+  if(first&&fy===(y-1)&&!full)              return 'LYMTD';
+  if(full&&ty===(y-1))                      return 'Last_Year_Full_Month';
+  return 'Unknown';
+}
+
+// ═══════════════════════════════ INIT ═══════════════════════════════
+(function init(){
+  // Date column reference
+  const ranges=getColRanges();
+  const ref=document.getElementById('colRef');
+  DATA_COLS.forEach(col=>{
+    const r=ranges[col];
+    const d=document.createElement('div');d.className='col-box';
+    d.innerHTML=`<div class="col-name" style="color:${COL_COLORS[col]}">${col}</div><div class="col-range">${fmtD(r.from)} → ${fmtD(r.to)}</div>`;
+    ref.appendChild(d);
+  });
+  // Select local by default
+  selectSource('local');
+  // Hardcoded default URL — works on every system
+  const HARDCODED_URL='https://script.google.com/macros/s/AKfycbz31a-QX6mChdkDTpnKlOrsC3uP-7eSx55M6pL951DHoPuBmsRn_Tvl4ELKv_wT8mJ4/exec';
+  const saved=localStorage.getItem('jcb_url')||HARDCODED_URL;
+  if(saved){document.getElementById('scriptUrl').value=saved;validateUrl(document.getElementById('scriptUrl'));}
+})();
+
+// ═══════════════════════════════ SOURCE SELECTION ═══════════════════════════════
+function selectSource(src){
+  currentSource=src;
+  document.querySelectorAll('.src-card').forEach(c=>c.classList.remove('active'));
+  document.getElementById('src-'+src).classList.add('active');
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+src).classList.add('active');
+}
+
+// ═══════════════════════════════ LOCAL UPLOAD ═══════════════════════════════
+function setMode(mode){
+  uploadMode=mode;
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('mode-'+mode).classList.add('active');
+  const fi=document.getElementById('fi');
+  const dz=document.getElementById('dz');
+  if(mode==='folder'){
+    fi.setAttribute('webkitdirectory','');fi.removeAttribute('multiple');
+    dz.querySelector('.upload-title').innerHTML='Drop <span style="color:var(--acc)">folders</span> here or click to browse';
+    dz.querySelector('.upload-hint').textContent='Select ALL or FULL MONTH folder · all XLS files inside are loaded';
+  } else {
+    fi.removeAttribute('webkitdirectory');fi.setAttribute('multiple','');
+    dz.querySelector('.upload-title').innerHTML='Drop <span style="color:var(--acc)">XLS files</span> here or click to browse';
+    dz.querySelector('.upload-hint').textContent='Multiple .xls and .xlsx files supported';
+  }
+}
+
+const dz=document.getElementById('dz'),fi=document.getElementById('fi');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over')});
+dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+dz.addEventListener('drop',async e=>{
+  e.preventDefault();dz.classList.remove('over');
+  const items=[...e.dataTransfer.items];
+  const files=[];
+  for(const item of items){
+    if(item.kind!=='file')continue;
+    const entry=item.webkitGetAsEntry&&item.webkitGetAsEntry();
+    if(entry&&entry.isDirectory){await readDir(entry,files,entry.name);}
+    else{const f=item.getAsFile();if(f)files.push({file:f,source:'local',folderName:''});}
+  }
+  enqueueFiles(files);
+});
+fi.addEventListener('change',e=>{
+  const files=[...e.target.files].map(f=>({
+    file:f,source:'local',
+    folderName:f.webkitRelativePath?f.webkitRelativePath.split('/')[0]:''
+  }));
+  enqueueFiles(files);
+  fi.value='';
+});
+
+function readDir(entry,files,folderName){
+  return new Promise(res=>{
+    const reader=entry.createReader();
+    const read=()=>reader.readEntries(async entries=>{
+      if(!entries.length){res();return;}
+      for(const e of entries){
+        if(e.isFile){await new Promise(r=>e.file(f=>{files.push({file:f,source:'local',folderName});r();}));}
+        else if(e.isDirectory){await readDir(e,files,folderName+'/'+e.name);}
+      }
+      read();
+    });
+    read();
+  });
+}
+
+function enqueueFiles(items){
+  let added=0;
+  items.forEach(({file,source,folderName})=>{
+    if(!/\.xlsx?$/i.test(file.name))return;
+    const key=(file.webkitRelativePath||file.name);
+    if(!fileQueue.find(x=>(x.file.webkitRelativePath||x.file.name)===key)){
+      fileQueue.push({file,source,folderName});added++;
+    }
+  });
+  renderQueue();
+  if(added) log(`Added ${added} file(s) from local`,'ok');
+}
+
+// ═══════════════════════════════ GOOGLE DRIVE ═══════════════════════════════
+function connectGDrive(){
+  // Use Google Drive Picker API via OAuth implicit flow
+  // For full implementation, needs Google OAuth Client ID
+  const clientId=prompt('Enter your Google OAuth Client ID:\n(console.cloud.google.com → Credentials → OAuth 2.0)');
+  if(!clientId){return;}
+  const scope='https://www.googleapis.com/auth/drive.readonly';
+  const redirect=location.href.split('?')[0].split('#')[0];
+  sessionStorage.setItem('gdrive_cid',clientId);
+  window.open(`https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirect)}&response_type=token&scope=${encodeURIComponent(scope)}&state=gdrive`,'gdriveOAuth','width=500,height=600');
+}
+
+window.addEventListener('message',e=>{
+  if(e.data&&e.data.type==='oauth_token'){
+    if(e.data.provider==='gdrive'){gdriveToken=e.data.token;onGDriveConnected();}
+    if(e.data.provider==='onedrive'){onedriveToken=e.data.token;onOneDriveConnected();}
+  }
+});
+// Handle redirect back with token in hash
+(function checkOAuthReturn(){
+  const hash=location.hash;
+  if(!hash)return;
+  const params=new URLSearchParams(hash.slice(1));
+  const token=params.get('access_token');
+  const state=params.get('state');
+  if(token&&state==='gdrive'){
+    if(window.opener){window.opener.postMessage({type:'oauth_token',provider:'gdrive',token},'*');window.close();}
+    else{gdriveToken=token;onGDriveConnected();history.replaceState(null,'',location.pathname);}
+  }
+  if(token&&state==='onedrive'){
+    if(window.opener){window.opener.postMessage({type:'oauth_token',provider:'onedrive',token},'*');window.close();}
+    else{onedriveToken=token;onOneDriveConnected();history.replaceState(null,'',location.pathname);}
+  }
+})();
+
+async function onGDriveConnected(){
+  document.getElementById('gdrive-status').textContent='✓ Connected';
+  document.getElementById('gdrive-status').className='connect-status ok';
+  document.getElementById('gdrive-browser').classList.remove('hidden');
+  gdriveStack=['root'];
+  await loadGDriveFolder('root');
+  log('Google Drive connected','ok');
+}
+
+async function loadGDriveFolder(folderId){
+  document.getElementById('gdrive-list').innerHTML='<div style="padding:16px;text-align:center;color:var(--mut);font-size:12px">Loading...</div>';
+  try{
+    const q=`'${folderId}' in parents and trashed=false and (mimeType='application/vnd.google-apps.folder' or name contains '.xls')`;
+    const url=`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name,mimeType,size,modifiedTime)&orderBy=folder,name&pageSize=100`;
+    const res=await fetch(url,{headers:{Authorization:'Bearer '+gdriveToken}});
+    const data=await res.json();
+    renderDriveList('gdrive',data.files||[]);
+    updateGDrivePath();
+  }catch(e){
+    document.getElementById('gdrive-list').innerHTML=`<div style="padding:16px;text-align:center;color:var(--red);font-size:12px">Error: ${e.message}</div>`;
+  }
+}
+
+function renderDriveList(provider,items){
+  const listEl=document.getElementById(provider+'-list');
+  if(!items.length){listEl.innerHTML='<div style="padding:16px;text-align:center;color:var(--mut);font-size:12px">No XLS files or folders found</div>';return;}
+  const selected=provider==='gdrive'?gdriveSelected:onedriveSelected;
+  listEl.innerHTML='';
+  items.forEach(item=>{
+    const isFolder=item.mimeType==='application/vnd.google-apps.folder'||item.folder;
+    const isSel=!!selected[item.id];
+    const d=document.createElement('div');
+    d.className='drive-item'+(isSel?' selected':'');
+    d.innerHTML=`<span class="di-icon">${isFolder?'📁':'📄'}</span>
+      <span class="di-name">${item.name}</span>
+      <span class="di-meta">${item.size?Math.round(item.size/1024)+'KB':''}</span>
+      <span class="di-check">${isSel?'✓':''}</span>`;
+    if(isFolder){
+      d.onclick=()=>{
+        if(provider==='gdrive'){gdriveStack.push(item.id);loadGDriveFolder(item.id);}
+        else{onedriveStack.push({id:item.id,name:item.name});loadOneDriveFolder(item.id);}
+      };
+    } else {
+      d.onclick=()=>{
+        if(selected[item.id])delete selected[item.id];
+        else selected[item.id]=item;
+        d.classList.toggle('selected');
+        d.querySelector('.di-check').textContent=selected[item.id]?'✓':'';
+        document.getElementById(provider+'-sel-count').textContent=Object.keys(selected).length+' selected';
+      };
+    }
+    listEl.appendChild(d);
+  });
+}
+
+function updateGDrivePath(){
+  const pb=document.getElementById('gdrive-path');
+  pb.innerHTML='<span class="path-seg" onclick="gdriveNav(\'root\')">My Drive</span>';
+  gdriveStack.slice(1).forEach((id,i)=>{
+    pb.innerHTML+=`<span class="path-sep">/</span><span class="path-seg" onclick="gdriveNavIdx(${i+1})">${id.slice(0,8)}...</span>`;
+  });
+}
+function gdriveNav(id){gdriveStack=['root'];loadGDriveFolder(id);}
+function gdriveNavIdx(idx){gdriveStack=gdriveStack.slice(0,idx+1);loadGDriveFolder(gdriveStack[gdriveStack.length-1]);}
+
+async function importGDriveSelected(){
+  const sel=Object.values(gdriveSelected);
+  if(!sel.length){alert('Select at least one file');return;}
+  log(`Downloading ${sel.length} file(s) from Google Drive...`,'inf');
+  for(const item of sel){
+    try{
+      const res=await fetch(`https://www.googleapis.com/drive/v3/files/${item.id}?alt=media`,{headers:{Authorization:'Bearer '+gdriveToken}});
+      const blob=await res.blob();
+      const file=new File([blob],item.name,{type:blob.type});
+      fileQueue.push({file,source:'gdrive',folderName:'Google Drive'});
+    }catch(e){log(`Failed: ${item.name} - ${e.message}`,'err');}
+  }
+  gdriveSelected={};
+  renderQueue();
+  log(`Imported from Google Drive`,'ok');
+}
+
+// ═══════════════════════════════ ONEDRIVE ═══════════════════════════════
+function connectOneDrive(){
+  const clientId=prompt('Enter your Microsoft App Client ID:\n(portal.azure.com → App registrations)');
+  if(!clientId)return;
+  const scope='https://graph.microsoft.com/Files.Read';
+  const redirect=location.href.split('?')[0].split('#')[0];
+  sessionStorage.setItem('od_cid',clientId);
+  window.open(`https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirect)}&response_type=token&scope=${encodeURIComponent(scope)}&state=onedrive`,'odOAuth','width=500,height=600');
+}
+
+async function onOneDriveConnected(){
+  document.getElementById('onedrive-status').textContent='✓ Connected';
+  document.getElementById('onedrive-status').className='connect-status ok';
+  document.getElementById('onedrive-browser').classList.remove('hidden');
+  onedriveStack=[{id:'root',name:'My Files'}];
+  await loadOneDriveFolder('root');
+  log('OneDrive connected','ok');
+}
+
+async function loadOneDriveFolder(folderId){
+  document.getElementById('onedrive-list').innerHTML='<div style="padding:16px;text-align:center;color:var(--mut);font-size:12px">Loading...</div>';
+  try{
+    const url=folderId==='root'?'https://graph.microsoft.com/v1.0/me/drive/root/children':'https://graph.microsoft.com/v1.0/me/drive/items/'+folderId+'/children';
+    const res=await fetch(url+'?$select=id,name,size,lastModifiedDateTime,folder,file&$top=100',{headers:{Authorization:'Bearer '+onedriveToken}});
+    const data=await res.json();
+    const items=(data.value||[]).filter(i=>(i.folder||/\.xlsx?$/i.test(i.name)));
+    const mapped=items.map(i=>({id:i.id,name:i.name,size:i.size,mimeType:i.folder?'folder':'file'}));
+    renderDriveList('onedrive',mapped);
+    updateOneDrivePath();
+  }catch(e){
+    document.getElementById('onedrive-list').innerHTML=`<div style="padding:16px;text-align:center;color:var(--red);font-size:12px">Error: ${e.message}</div>`;
+  }
+}
+
+function updateOneDrivePath(){
+  const pb=document.getElementById('onedrive-path');
+  pb.innerHTML='';
+  onedriveStack.forEach((seg,i)=>{
+    if(i>0)pb.innerHTML+=`<span class="path-sep">/</span>`;
+    pb.innerHTML+=`<span class="path-seg" onclick="onedriveNavIdx(${i})">${seg.name}</span>`;
+  });
+}
+function onedriveNav(id){onedriveStack=[{id,name:'My Files'}];loadOneDriveFolder(id);}
+function onedriveNavIdx(idx){onedriveStack=onedriveStack.slice(0,idx+1);loadOneDriveFolder(onedriveStack[idx].id);}
+
+async function importOneDriveSelected(){
+  const sel=Object.values(onedriveSelected);
+  if(!sel.length){alert('Select at least one file');return;}
+  log(`Downloading ${sel.length} file(s) from OneDrive...`,'inf');
+  for(const item of sel){
+    try{
+      const dlRes=await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${item.id}/content`,{headers:{Authorization:'Bearer '+onedriveToken}});
+      const blob=await dlRes.blob();
+      const file=new File([blob],item.name,{type:blob.type});
+      fileQueue.push({file,source:'onedrive',folderName:'OneDrive'});
+    }catch(e){log(`Failed: ${item.name} - ${e.message}`,'err');}
+  }
+  onedriveSelected={};
+  renderQueue();
+  log('Imported from OneDrive','ok');
+}
+
+// ═══════════════════════════════ FTP ═══════════════════════════════
+// FTP requires a backend proxy since browsers can't connect to FTP directly
+// We use the Apps Script as a proxy endpoint
+async function connectFTP(){
+  const host=document.getElementById('ftpHost').value.trim();
+  const port=document.getElementById('ftpPort').value.trim()||'21';
+  const user=document.getElementById('ftpUser').value.trim();
+  const pass=document.getElementById('ftpPass').value;
+  const path=document.getElementById('ftpPath').value.trim()||'/';
+  const proto=document.getElementById('ftpProto').value;
+  const url=document.getElementById('scriptUrl').value.trim();
+
+  if(!host||!user){alert('Enter host and username');return;}
+  if(!url){alert('Enter your Apps Script URL first (needed as FTP proxy)');return;}
+
+  document.getElementById('ftp-status').textContent='Connecting...';
+  log(`Connecting to ${proto}://${host}:${port}${path}`,'inf');
+
+  try{
+    const res=await fetch(url,{
+      method:'POST',
+      headers:{'Content-Type':'text/plain'},
+      body:JSON.stringify({action:'ftp_list',host,port,user,pass,path,proto})
+    });
+    const data=await res.json();
+    if(data.status==='error')throw new Error(data.message);
+    document.getElementById('ftp-status').innerHTML='<span style="color:var(--acc3)">✓ Connected</span>';
+    renderFTPList(data.files||[],path);
+    document.getElementById('ftp-browser').classList.remove('hidden');
+    document.getElementById('ftp-path').textContent=path;
+    log(`FTP connected · ${(data.files||[]).length} items in ${path}`,'ok');
+  }catch(e){
+    document.getElementById('ftp-status').innerHTML=`<span style="color:var(--red)">Error: ${e.message}</span>`;
+    log('FTP connection failed: '+e.message,'err');
+  }
+}
+
+function renderFTPList(items,path){
+  const listEl=document.getElementById('ftp-list');
+  listEl.innerHTML='';
+  items.filter(i=>i.isDir||/\.xlsx?$/i.test(i.name)).forEach(item=>{
+    const isSel=!!ftpSelected[path+'/'+item.name];
+    const d=document.createElement('div');d.className='drive-item'+(isSel?' selected':'');
+    d.innerHTML=`<span class="di-icon">${item.isDir?'📁':'📄'}</span>
+      <span class="di-name">${item.name}</span>
+      <span class="di-meta">${item.size?Math.round(item.size/1024)+'KB':''}</span>
+      <span class="di-check">${isSel?'✓':''}</span>`;
+    const key=path+'/'+item.name;
+    d.onclick=()=>{
+      if(ftpSelected[key])delete ftpSelected[key];
+      else ftpSelected[key]={...item,path:key};
+      d.classList.toggle('selected');
+      d.querySelector('.di-check').textContent=ftpSelected[key]?'✓':'';
+      document.getElementById('ftp-sel-count').textContent=Object.keys(ftpSelected).length+' selected';
+    };
+    listEl.appendChild(d);
+  });
+}
+
+async function importFTPSelected(){
+  const sel=Object.values(ftpSelected);
+  if(!sel.length){alert('Select at least one file');return;}
+  const url=document.getElementById('scriptUrl').value.trim();
+  const host=document.getElementById('ftpHost').value.trim();
+  const user=document.getElementById('ftpUser').value.trim();
+  const pass=document.getElementById('ftpPass').value;
+  const port=document.getElementById('ftpPort').value.trim()||'21';
+  const proto=document.getElementById('ftpProto').value;
+
+  log(`Downloading ${sel.length} file(s) from FTP...`,'inf');
+  for(const item of sel){
+    try{
+      const res=await fetch(url,{
+        method:'POST',headers:{'Content-Type':'text/plain'},
+        body:JSON.stringify({action:'ftp_download',host,port,user,pass,path:item.path,proto})
+      });
+      const data=await res.json();
+      if(data.status==='error')throw new Error(data.message);
+      // data.content = base64 encoded file
+      const binary=atob(data.content);
+      const bytes=new Uint8Array(binary.length);
+      for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+      const file=new File([bytes],item.name);
+      fileQueue.push({file,source:'ftp',folderName:'FTP: '+host});
+    }catch(e){log(`FTP download failed: ${item.name} - ${e.message}`,'err');}
+  }
+  ftpSelected={};
+  renderQueue();
+  log('FTP import complete','ok');
+}
+
+// ═══════════════════════════════ QUEUE ═══════════════════════════════
+function renderQueue(){
+  const list=document.getElementById('queueList');
+  const count=document.getElementById('queueCount');
+  count.textContent=fileQueue.length+' file'+(fileQueue.length!==1?'s':'');
+  if(!fileQueue.length){
+    list.innerHTML='<div style="padding:16px;text-align:center;color:var(--mut);font-size:12px;border:1px dashed var(--bdr);border-radius:7px">No files queued — add files from any source above</div>';
+    document.getElementById('parseBtn').disabled=true;
+    return;
+  }
+  list.innerHTML='';
+  fileQueue.forEach(({file,source,folderName},i)=>{
+    const p=fileCache[file.name]||{};
+    const tc=TAG_CLS[p.col]||'t-unk';
+    const srcColors={'local':'var(--local)','gdrive':'var(--gdrive)','onedrive':'var(--onedrive)','ftp':'var(--ftp)'};
+    const srcNames={'local':'LOCAL','gdrive':'DRIVE','onedrive':'ONEDRIVE','ftp':'FTP'};
+    const d=document.createElement('div');d.className='queue-item';
+    d.innerHTML=`
+      <span class="qi-src" style="color:${srcColors[source]||'var(--mut)'};border-color:${srcColors[source]||'var(--bdr)'}">${srcNames[source]||source}</span>
+      <span class="qi-name">${folderName?'<span class="qi-folder">'+folderName+' /</span>':''} ${file.name}</span>
+      <span class="qi-meta">${(file.size/1024).toFixed(0)}KB · ${p.range||'unparsed'}</span>
+      <span class="qi-tag ${tc}" style="border:1px solid">${p.col||'?'}</span>
+      <button class="qi-remove" onclick="removeFromQueue(${i})">×</button>`;
+    list.appendChild(d);
+  });
+  document.getElementById('parseBtn').disabled=false;
+}
+
+function removeFromQueue(i){fileQueue.splice(i,1);renderQueue();}
+function clearQueue(){fileQueue=[];fileCache={};colData={};renderQueue();document.getElementById('pushBtn').disabled=true;document.getElementById('statsRow').classList.add('hidden');}
+
+// ═══════════════════════════════ PARSE ═══════════════════════════════
+function pn(v){
+  if(v===null||v===undefined||v==='')return 0;
+  if(typeof v==='number')return isNaN(v)?0:v;
+  const s=String(v).replace(/[^\d.]/g,'').trim();
+  if(!s)return 0;const n=parseFloat(s);return isNaN(n)?0:n;
+}
+
+function parseHTMLTable(html){
+  const rows=[];
+  const trBlocks=html.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi)||[];
+  trBlocks.forEach(trHtml=>{
+    const cells=[];
+    const cp=/<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;let m;
+    while((m=cp.exec(trHtml))!==null){
+      cells.push(m[1].replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/&#160;/g,' ').replace(/&amp;/g,'&').replace(/\s+/g,' ').trim());
+    }
+    if(cells.length>=3)rows.push(cells);
+  });
+  return rows;
+}
+
+function parseXLSX(raw){
+  const wb=XLSX.read(raw,{type:'binary'});
+  const ws=wb.Sheets[wb.SheetNames[0]];
+  const ref=ws['!ref'];if(!ref)return[];
+  const range=XLSX.utils.decode_range(ref);
+  const rows=[];
+  for(let R=range.s.r;R<=range.e.r;R++){
+    const row=[];
+    for(let C=range.s.c;C<=range.e.c;C++){
+      const cell=ws[XLSX.utils.encode_cell({r:R,c:C})];
+      if(!cell){row.push('');continue;}
+      if(cell.t==='n')row.push(cell.v);else row.push(String(cell.v||''));
+    }
+    rows.push(row);
+  }
+  return rows;
+}
+
+function detectDates(rows){
+  for(let r=0;r<Math.min(rows.length,12);r++){
+    const s=rows[r].join(' ');
+    const fm=s.match(/From\s*:(\d{2}\s+[A-Za-z]+\s+\d{4})/i);
+    const tm=s.match(/To\s*:(\d{2}\s+[A-Za-z]+\s+\d{4})/i);
+    if(fm&&tm)return{fromStr:fm[1].trim(),toStr:tm[1].trim()};
+  }
+  return{fromStr:'',toStr:''};
+}
+
+function extractCenters(rows, targetColName='total'){
+  let hdr=-1, targetCol=-1;
+  const tgt=targetColName.toLowerCase().trim();
+  for(let r=0;r<rows.length;r++){
+    const j=rows[r].map(c=>String(c||'').toLowerCase().trim()).join('|');
+    if(j.includes('zone')&&j.includes('total')){
+      hdr=r;
+      rows[r].forEach((c,i)=>{
+        const lc=String(c).toLowerCase().trim();
+        // Exact match first
+        if(lc===tgt){targetCol=i;return;}
+      });
+      // Fallback: prefix/contains match (handles 'product'→'products', 'Product Qty', etc.)
+      if(targetCol<0){
+        rows[r].forEach((c,i)=>{
+          const lc=String(c).toLowerCase().trim();
+          if(targetCol<0&&lc.startsWith(tgt.replace(/s$/,''))) targetCol=i;
+        });
+      }
+      // Final fallback for 'total': use last column
+      if(targetCol<0 && tgt==='total') targetCol=rows[r].length-1;
+      break;
+    }
+  }
+  if(hdr<0||targetCol<0)return{};
+  const result={};
+  for(let r=hdr+1;r<rows.length;r++){
+    const row=rows[r]||[];
+    const zone=String(row[0]||'').trim(),center=String(row[1]||'').trim();
+    if(!center)continue;
+    if(/^total:/i.test(zone))continue;
+    if(/^(inventory|warehouse|no\s*zone)$/i.test(zone))continue;
+    if(/^(training|inventory|warehouse|academy)/i.test(center))continue;
+    const val=pn(row.length>targetCol?row[targetCol]:0);
+    if(val>0)result[center]=val;
+  }
+  return result;
+}
+
+async function readFile(file){
+  return new Promise((res,rej)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      try{
+        const raw=e.target.result;
+        const peek=raw.substring(0,20).toLowerCase();
+        if(peek.includes('<html')||peek.includes('<table')){
+          const dateMatch=raw.match(/From\s*:(\d{2}\s+[A-Za-z]+\s+\d{4})[\s\S]*?To\s*:(\d{2}\s+[A-Za-z]+\s+\d{4})/i);
+          const rows=parseHTMLTable(raw);
+          if(dateMatch)rows.unshift(['__DATE__ From :'+dateMatch[1].trim()+' To :'+dateMatch[2].trim()]);
+          // Detect Accounting Report (cash collections) by signature columns
+          const isCash=/pre-paid\s*cards/i.test(raw)||/organization\s*collections\s*by\s*item/i.test(raw);
+          if(isCash)rows.unshift(['__CASH__']);
+          res(rows);
+        }else{res(parseXLSX(raw));}
+      }catch(err){rej(err);}
+    };
+    reader.onerror=()=>rej(new Error('Read error'));
+    reader.readAsBinaryString(file);
+  });
+}
+
+async function parseAll(){
+  colData={};fileCache={};
+  showProgress();log('Parsing '+fileQueue.length+' files...','inf');
+  const fileInfos=[];
+  for(let i=0;i<fileQueue.length;i++){
+    const {file}=fileQueue[i];
+    try{
+      const rows=await readFile(file);
+      // Extract cash flag marker
+      let isCash=false;
+      if(rows.length&&rows[0][0]==='__CASH__'){isCash=true;rows.shift();}
+      const {fromStr,toStr}=detectDates(rows);
+      const from=parseFileDate(fromStr),to=parseFileDate(toStr);
+      fileInfos.push({file,rows,fromStr,toStr,from,to,isCash});
+    }catch(e){log(`✗ ${file.name}: ${e.message}`,'err');}
+    setPg(5+(i+1)/fileQueue.length*40,`Read ${i+1}/${fileQueue.length}`);
+  }
+  // Group by date range
+  const groups={};
+  fileInfos.forEach(fi=>{
+    if(!fi.from||!fi.to)return;
+    const key=dateKey(fi.from)+'_'+dateKey(fi.to)+(fi.isCash?'_cash':'');
+    if(!groups[key])groups[key]={files:[],from:fi.from,to:fi.to,isSingle:dateKey(fi.from)===dateKey(fi.to),isCash:fi.isCash};
+    groups[key].files.push(fi);
+  });
+  const cashGroups=Object.values(groups).filter(g=>g.isCash);
+  const nonCashGroups=Object.values(groups).filter(g=>!g.isCash);
+  const singles=nonCashGroups.filter(g=>g.isSingle).sort((a,b)=>b.from-a.from);
+  const ranges=nonCashGroups.filter(g=>!g.isSingle);
+  ['FTD','FTD_1','FTD-2','FTD-3'].forEach((col,i)=>{if(singles[i])singles[i].col=col;});
+  // For revenue files, also extract Products into corresponding product column
+  // (MTD & FTD-1 product cols come from cash files only, so excluded here)
+  const REVENUE_PROD_MAP={
+    'LMTD':'LMTD_Product',
+    'LYMTD':'LYMTD_Product',
+    'Last_Full_Month':'Last_Full_Month_Product',
+    'Last_Year_Full_Month':'Last_Year_Full_Month_Product',
+  };
+  ranges.forEach(g=>{g.col=detectRangeCol(g.from,g.to);g.prodCol=REVENUE_PROD_MAP[g.col]||null;});
+  // Assign cash groups: detect base period, map to cash col + product col
+  const CASH_PROD_MAP={
+    'MTD_CASH':'MTD_PRODUCT',
+    'FTD_1_CASH':'FTD_1_Product',
+    'LMTD':'LMTD_Product',
+    'LYMTD':'LYMTD_Product',
+    'Last_Full_Month':'Last_Full_Month_Product',
+    'Last_Year_Full_Month':'Last_Year_Full_Month_Product',
+  };
+  cashGroups.forEach(g=>{
+    if(g.isSingle){
+      g.col='FTD_1_CASH'; g.prodCol='FTD_1_Product';
+    } else {
+      const base=detectRangeCol(g.from,g.to);
+      g.col=(base==='MTD')?'MTD_CASH':null;
+      g.prodCol=CASH_PROD_MAP[base==='MTD'?'MTD_CASH':base]||null;
+    }
+  });
+
+  [...singles,...ranges,...cashGroups].forEach(group=>{
+    const col=group.col||'Unknown';
+    group.files.forEach(({file,rows,fromStr,toStr})=>{
+      const centers=extractCenters(rows);
+      // Store totals only for real columns (not product-only cash groups)
+      if(col!=='Unknown'){
+        if(!colData[col])colData[col]={};
+        Object.entries(centers).forEach(([c,t])=>{colData[col][c]=(colData[col][c]||0)+t;});
+      }
+      // Extract products for any cash group that has a prodCol
+      if(group.prodCol){
+        if(!colData[group.prodCol])colData[group.prodCol]={};
+        const products=extractCenters(rows,'products');
+        Object.entries(products).forEach(([c,v])=>{colData[group.prodCol][c]=(colData[group.prodCol][c]||0)+v;});
+      }
+      // Extract memberships, packages, giftcards for MTD cash groups
+      if(group.isCash && col==='MTD_CASH'){
+        ['MTD_CASH_MEMBERSHIPS','MTD_CASH_PACKAGES','MTD_GIFTCARDS'].forEach((destCol,idx)=>{
+          const srcName=['memberships','packages','giftcards'][idx];
+          if(!colData[destCol])colData[destCol]={};
+          const vals=extractCenters(rows,srcName);
+          Object.entries(vals).forEach(([c,v])=>{colData[destCol][c]=(colData[destCol][c]||0)+v;});
+        });
+      }
+      // Extract memberships from non-cash MTD revenue files
+      if(!group.isCash && col==='MTD'){
+        if(!colData['MTD_Revenue_MEMBERSHIPS'])colData['MTD_Revenue_MEMBERSHIPS']={};
+        const memVals=extractCenters(rows,'memberships');
+        Object.entries(memVals).forEach(([c,v])=>{colData['MTD_Revenue_MEMBERSHIPS'][c]=(colData['MTD_Revenue_MEMBERSHIPS'][c]||0)+v;});
+      }
+      const displayCol=col!=='Unknown'?col:(group.prodCol||'Unknown');
+      fileCache[file.name]={col:displayCol,range:`${fromStr} → ${toStr}`};
+      log(`✓ ${file.name} → [${displayCol}] · ${Object.keys(centers).length} centers`,Object.keys(centers).length>0?'ok':'wrn');
+    });
+  });
+
+  renderQueue();
+  log('Columns: '+Object.keys(colData).join(', '),'ok');
+  setPg(100,'Parse complete');
+  renderStats();
+  document.getElementById('pushBtn').disabled=!document.getElementById('scriptUrl').value.includes('script.google.com');
+}
+
+// ═══════════════════════════════ BUILD & PUSH ═══════════════════════════════
+function getVal(col,center){
+  if(!colData[col])return'';
+  if(colData[col][center]!==undefined)return colData[col][center];
+  const k=center.toLowerCase().trim();
+  const match=Object.keys(colData[col]).find(x=>x.toLowerCase().trim()===k);
+  return match!==undefined?colData[col][match]:'';
+}
+
+function buildRows(){
+  const seen=new Set(FIXED_CENTERS.map(r=>r.center.toLowerCase().trim()));
+  const extra=[];
+  Object.values(colData).forEach(cd=>{Object.keys(cd).forEach(c=>{if(!seen.has(c.toLowerCase().trim())){extra.push({zone:'',center:c});seen.add(c.toLowerCase().trim());}});});
+  return[...FIXED_CENTERS,...extra].map(({zone,center})=>{
+    const row={Zone:zone,Center:center};DATA_COLS.forEach(col=>{row[col]=getVal(col,center);});return row;
+  });
+}
+
+async function pushAll(){
+  const url=document.getElementById('scriptUrl').value.trim();
+  if(!url){alert('Enter Apps Script URL');return;}
+  showProgress();log('Building sheet data...','inf');
+  try{
+    const rows=buildRows();
+    const header=['Zone','Center',...DATA_COLS];
+    const sheetData=[header];
+    rows.forEach(row=>{sheetData.push([row.Zone,row.Center,...DATA_COLS.map(col=>{const v=row[col];return(v===''||v===undefined)?'':v;})]);});
+    sheetData.push(['GRAND TOTAL','',...DATA_COLS.map(col=>rows.reduce((s,r)=>s+(typeof r[col]==='number'?r[col]:0),0))]);
+
+    log(`Sending ${sheetData.length} rows to Revenue sheet...`,'inf');
+    const CHUNK=150;
+    for(let i=0;i<sheetData.length;i+=CHUNK){
+      const chunk=sheetData.slice(i,i+CHUNK);
+      const res=await fetch(url,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({sheet:'Revenue',data:chunk,clear:i===0})});
+      const text=await res.text();
+      let json;try{json=JSON.parse(text);}catch(e){throw new Error('Script error: '+text.slice(0,200));}
+      if(json.status==='error')throw new Error(json.message);
+      setPg(20+((i+CHUNK)/sheetData.length)*70,`Sent ${Math.min(i+CHUNK,sheetData.length)}/${sheetData.length}`);
+    }
+    try{await fetch(url+'?action=format&sheet=Revenue',{method:'GET',mode:'no-cors'});}catch(e){}
+    setPg(100,'🎉 Done!');
+    log('🎉 Revenue sheet updated successfully!','ok');
+  }catch(e){log('Error: '+e.message,'err');setPg(0,'Failed');}
+}
+
+// ═══════════════════════════════ UI HELPERS ═══════════════════════════════
+function renderStats(){
+  const sr=document.getElementById('statsRow');
+  sr.classList.remove('hidden');
+  sr.innerHTML=DATA_COLS.map(col=>{
+    const centers=colData[col]?Object.keys(colData[col]):[];
+    const n=centers.length;
+    const total=centers.reduce((s,c)=>s+(colData[col][c]||0),0);
+    const totalFmt=total>=1e7?(total/1e7).toFixed(2)+'Cr':total>=1e5?(total/1e5).toFixed(2)+'L':total>0?total.toLocaleString('en-IN',{maximumFractionDigits:0}):'—';
+    return`<div class="stat-box">
+      <div class="stat-val" style="color:${COL_COLORS[col]}">${totalFmt}</div>
+      <div class="stat-lbl" style="font-size:9px;margin-bottom:2px">${col}</div>
+      <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--mut)">${n>0?n+' centers':'—'}</div>
+    </div>`;
+  }).join('');
+}
+
+function showProgress(){document.getElementById('progressCard').classList.remove('hidden');}
+function log(msg,type='inf'){
+  const b=document.getElementById('logEl');
+  const t=new Date().toTimeString().slice(0,8);
+  const d=document.createElement('div');d.className='ll';
+  d.innerHTML=`<span class="lt">${t}</span><span class="l${type}">${msg}</span>`;
+  b.appendChild(d);b.scrollTop=b.scrollHeight;
+}
+function setPg(pct,lbl){
+  document.getElementById('pgBar').style.width=pct+'%';
+  document.getElementById('pgLabel').textContent=lbl;
+  document.getElementById('pgPct').textContent=Math.round(pct)+'%';
+}
+function validateUrl(el){
+  const v=el.value.trim();
+  if(v.includes('script.google.com')&&v.includes('/exec')){
+    el.className='url-input valid';
+    document.getElementById('urlSt').innerHTML='<span style="color:var(--acc3)">✓ Valid URL · 💾 Saved</span> · <a href="#" onclick="showSetupGuide();return false" style="color:var(--acc)">Setup guide ▾</a> · <a href="#" onclick="clearSavedUrl();return false" style="color:var(--red);font-size:10px">clear saved</a>';
+    localStorage.setItem('jcb_url',v);
+    document.getElementById('pushBtn').disabled=Object.keys(colData).length===0;
+  }else{
+    el.className='url-input';
+  }
+}
+function showSetupGuide(){
+  const g=document.getElementById('setupGuide');
+  g.classList.toggle('hidden');
+}
+function clearSavedUrl(){
+  localStorage.removeItem('jcb_url');
+  const el=document.getElementById('scriptUrl');
+  el.value='';el.className='url-input';
+  document.getElementById('urlSt').textContent='Saved URL cleared. Paste your Apps Script Web App URL.';
+  document.getElementById('pushBtn').disabled=true;
+}
+</script>
+</body>
+</html>
